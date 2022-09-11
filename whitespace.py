@@ -12,8 +12,7 @@ def _ws_number(code: str) -> int:
     code_pos = 0
     if code[code_pos] == LINE_FEED:
         raise RuntimeError(
-            "Expected a sign symbol before terminal when parsing number at "
-            + f"position {code_pos}"
+            "Expected a sign symbol before terminal when parsing number"
         )
     negative = code[code_pos] == TAB
     code_pos += 1
