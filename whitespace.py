@@ -4,11 +4,11 @@ LINE_FEED = '\n'
 WHITESPACE = {SPACE, TAB, LINE_FEED}
 
 
-def _ws_remove_comments(code: str) -> str:
+def ws_remove_comments(code: str) -> str:
     return ''.join([x for x in code if x in WHITESPACE])
 
 
-def _ws_number(code: str) -> int:
+def ws_number(code: str) -> int:
     code_pos = 0
     if code[code_pos] == LINE_FEED:
         raise RuntimeError(
@@ -26,7 +26,7 @@ def _ws_number(code: str) -> int:
     return int(binary_rep, 2)
 
 
-def _ws_label(code: str) -> str:
+def ws_label(code: str) -> str:
     code_pos = 0
     label = ''
     while code[code_pos] != LINE_FEED:
@@ -35,7 +35,7 @@ def _ws_label(code: str) -> str:
     return label
 
 
-def _ws_input_number(inp: str, input_pos: int) -> tuple[int, int]:
+def ws_input_number(inp: str, input_pos: int) -> tuple[int, int]:
     if inp[input_pos] == '0':
         if inp[input_pos + 1].lower() == 'x':
             base = 16  # Hex
@@ -56,7 +56,7 @@ def _ws_input_number(inp: str, input_pos: int) -> tuple[int, int]:
     return int(str_repr, base), input_pos
 
 
-def _ws_tokenize_stack(code: str) -> str:
+def ws_tokenize_stack(code: str) -> str:
     token = SPACE
     code_pos = 0
     space_or_tab = False
@@ -78,52 +78,52 @@ def _ws_tokenize_stack(code: str) -> str:
     return token
 
 
-def _ws_tokenize_arithmetic(code: str) -> str:
+def ws_tokenize_arithmetic(code: str) -> str:
     return TAB + SPACE + code[2] + code[3]
 
 
-def _ws_tokenize_heap(code: str) -> str:
+def ws_tokenize_heap(code: str) -> str:
     return TAB + TAB + code[2]
 
 
-def _ws_tokenize_io(code: str) -> str:
+def ws_tokenize_io(code: str) -> str:
     return TAB + LINE_FEED + code[2] + code[3]
 
 
-def _ws_tokenize_flow_control(code: str) -> tuple[str, None | str]:
+def ws_tokenize_flow_control(code: str) -> tuple[str, None | str]:
     token = LINE_FEED + code[1] + code[2]
     label: None | str = None
     if code[1] == SPACE or (code[1] == TAB and code[2] != LINE_FEED):
-        label_param = _ws_label(code[3:])
+        label_param = ws_label(code[3:])
         token += label_param + LINE_FEED
         if code[1] == SPACE and code[2] == SPACE:
             label = label_param
     return token, label
 
 
-def _ws_tokenize(code: str, labels: dict[str, int]) -> list[str]:
+def ws_tokenize(code: str, labels: dict[str, int]) -> list[str]:
     code_tokens: list[str] = []
     code_pos = 0
     while code_pos < len(code):
         if code[code_pos] == SPACE:
-            new_token = _ws_tokenize_stack(code[code_pos:])
+            new_token = ws_tokenize_stack(code[code_pos:])
             code_tokens.append(new_token)
             code_pos += len(new_token)
         elif code[code_pos] == TAB:
             if code[code_pos + 1] == SPACE:
-                new_token = _ws_tokenize_arithmetic(code[code_pos:])
+                new_token = ws_tokenize_arithmetic(code[code_pos:])
                 code_tokens.append(new_token)
                 code_pos += len(new_token)
             elif code[code_pos + 1] == TAB:
-                new_token = _ws_tokenize_heap(code[code_pos:])
+                new_token = ws_tokenize_heap(code[code_pos:])
                 code_tokens.append(new_token)
                 code_pos += len(new_token)
             elif code[code_pos + 1] == LINE_FEED:
-                new_token = _ws_tokenize_io(code[code_pos:])
+                new_token = ws_tokenize_io(code[code_pos:])
                 code_tokens.append(new_token)
                 code_pos += len(new_token)
         elif code[code_pos] == LINE_FEED:
-            new_token, label = _ws_tokenize_flow_control(code[code_pos:])
+            new_token, label = ws_tokenize_flow_control(code[code_pos:])
             if label is not None:
                 if label in labels:
                     raise SyntaxError(
@@ -134,21 +134,21 @@ def _ws_tokenize(code: str, labels: dict[str, int]) -> list[str]:
     return code_tokens
 
 
-def _ws_code_stack(code: str, stack: list[int]) -> None:
+def ws_code_stack(code: str, stack: list[int]) -> None:
     if code[1] == SPACE:
         # Push number to stack.
-        stack.append(_ws_number(code[2:]))
+        stack.append(ws_number(code[2:]))
     elif code[1] == TAB:
         if code[2] == SPACE:
             # Duplicate item at a specified position in the stack to the top.
-            parsed_int = _ws_number(code[3:])
+            parsed_int = ws_number(code[3:])
             if parsed_int < 0:
                 raise RuntimeError(f"Stack index of {parsed_int} is below 0")
             stack.append(stack[-(parsed_int + 1)])
         elif code[2] == LINE_FEED:
             # Remove a specified number of items from the top of the stack,
             # but leaving the top-most value in place.
-            parsed_int = _ws_number(code[3:])
+            parsed_int = ws_number(code[3:])
             if parsed_int < 0 or parsed_int >= len(stack):
                 parsed_int = len(stack) - 1
             for _ in range(parsed_int):
@@ -170,7 +170,7 @@ def _ws_code_stack(code: str, stack: list[int]) -> None:
             stack.pop(-1)
 
 
-def _ws_code_arithmetic(code: str, stack: list[int]) -> None:
+def ws_code_arithmetic(code: str, stack: list[int]) -> None:
     if code[2] == SPACE:
         if code[3] == SPACE:
             # Take the top two values off the stack, then push their sum to the
@@ -202,7 +202,7 @@ def _ws_code_arithmetic(code: str, stack: list[int]) -> None:
             "LINE FEED is not a valid instruction for the Arithmetic IMP")
 
 
-def _ws_code_heap(code: str, stack: list[int], heap: dict[int, int]) -> None:
+def ws_code_heap(code: str, stack: list[int], heap: dict[int, int]) -> None:
     if code[2] == SPACE:
         # Take the top two values off the stack, then store the second at
         # the address with the value of the first.
@@ -217,7 +217,7 @@ def _ws_code_heap(code: str, stack: list[int], heap: dict[int, int]) -> None:
             "LINE FEED is not a valid instruction for the Heap IMP")
 
 
-def _ws_code_io(code: str, stack: list[int], heap: dict[int, int],
+def ws_code_io(code: str, stack: list[int], heap: dict[int, int],
                 output: list[str], inp: str, input_pos: int) -> int:
     if code[2] == SPACE:
         if code[3] == SPACE:
@@ -243,7 +243,7 @@ def _ws_code_io(code: str, stack: list[int], heap: dict[int, int],
             elif code[3] == TAB:
                 # Remove the top-most value in the stack, then store the next
                 # number in input at that address in the heap.
-                parsed_int, input_pos = _ws_input_number(inp, input_pos)
+                parsed_int, input_pos = ws_input_number(inp, input_pos)
                 heap[stack.pop(-1)] = parsed_int
             else:
                 raise RuntimeError(
@@ -260,31 +260,31 @@ def _ws_code_io(code: str, stack: list[int], heap: dict[int, int],
     return input_pos
 
 
-def _ws_code_flow_control(code: str, stack: list[int], labels: dict[str, int],
+def ws_code_flow_control(code: str, stack: list[int], labels: dict[str, int],
                           call_stack: list[int], token_pos: int) -> None | int:
     if code[1] == SPACE:
         if code[2] == TAB:
             # Call a subroutine at the specified label by jumping there
             # unconditionally, storing the current position at the top of the
             # call stack.
-            parsed_label = _ws_label(code[3:])
+            parsed_label = ws_label(code[3:])
             call_stack.append(token_pos + 1)
             return labels[parsed_label]
         elif code[2] == LINE_FEED:
             # Jump unconditionally to the specified label.
-            parsed_label = _ws_label(code[3:])
+            parsed_label = ws_label(code[3:])
             return labels[parsed_label]
     elif code[1] == TAB:
         if code[2] == SPACE:
             # Remove the top-most value from the stack, then jump to the
             # specified label if the value is zero.
-            parsed_label = _ws_label(code[3:])
+            parsed_label = ws_label(code[3:])
             if stack.pop(-1) == 0:
                 return labels[parsed_label]
         elif code[2] == TAB:
             # Remove the top-most value from the stack, then jump to the
             # specified label if the value is less than zero.
-            parsed_label = _ws_label(code[3:])
+            parsed_label = ws_label(code[3:])
             if stack.pop(-1) < 0:
                 return labels[parsed_label]
         elif code[2] == LINE_FEED:
@@ -298,27 +298,27 @@ def _ws_code_flow_control(code: str, stack: list[int], labels: dict[str, int],
 
 
 def whitespace(code: str, inp: str = '') -> str:
-    code = _ws_remove_comments(code)
+    code = ws_remove_comments(code)
     output: list[str] = []
     stack: list[int] = []
     heap: dict[int, int] = {}
     labels: dict[str, int] = {}
     call_stack: list[int] = []
 
-    code_tokens = _ws_tokenize(code, labels)
+    code_tokens = ws_tokenize(code, labels)
     token_pos = 0
     input_pos = 0
     while token_pos < len(code_tokens):
         token = code_tokens[token_pos]
         if token[0] == SPACE:
-            _ws_code_stack(token, stack)
+            ws_code_stack(token, stack)
         elif token[0] == TAB:
             if token[1] == SPACE:
-                _ws_code_arithmetic(token, stack)
+                ws_code_arithmetic(token, stack)
             elif token[1] == TAB:
-                _ws_code_heap(token, stack, heap)
+                ws_code_heap(token, stack, heap)
             elif token[1] == LINE_FEED:
-                input_pos = _ws_code_io(
+                input_pos = ws_code_io(
                     token, stack, heap, output, inp, input_pos)
         elif token[0] == LINE_FEED:
             if token[1] == LINE_FEED and token[2] == LINE_FEED:
@@ -327,7 +327,7 @@ def whitespace(code: str, inp: str = '') -> str:
                 # Token is a label — no action needs to be taken.
                 pass
             else:
-                new_token_pos = _ws_code_flow_control(
+                new_token_pos = ws_code_flow_control(
                     token, stack, labels, call_stack, token_pos)
                 if new_token_pos is not None:
                     token_pos = new_token_pos - 1
